@@ -27,7 +27,7 @@ def sim_is_running():
     return result.stdout.strip() != ""
 
 
-def start_sim(model="x500_mc", world="flightstack", headless=True, log_name="px4"):
+def start_sim(model="x500_mc", world="flightstack", headless=True, log_name="px4", gz_seed=None):
     """Start PX4 + Gazebo in WSL in the background and return the Popen handle.
 
     Returns as soon as the process starts; connect() is what waits until the
@@ -37,6 +37,10 @@ def start_sim(model="x500_mc", world="flightstack", headless=True, log_name="px4
         stop_sim(None)  # leftovers from a crashed run would clash with this one
 
     env = f"PX4_SYS_AUTOSTART={AIRFRAME} PX4_SIM_MODEL=gz_{model} PX4_GZ_WORLD={world}"
+
+    if gz_seed is not None:
+        env += f" PX4_GZ_SIM_RENDER_ENGINE='ogre2 --seed {gz_seed}'"
+
     if headless:
         env = "HEADLESS=1 " + env
     # -d: no interactive pxh> shell, since nobody is typing into it

@@ -41,3 +41,32 @@ def test_stock_world_is_unchanged():
     root = tree.getroot()
     
     assert root.find("world/wind") is None
+
+def test_write_world_plugin_and_gust_verification():
+    test_speed = 3.0
+    test_dir_deg = 90.0
+    test_world_name = "testing_world"
+    test_gust_scaled = 0.45
+    
+    write_world(test_speed, test_dir_deg, name=test_world_name, gust_scaled=test_gust_scaled)
+    
+    generated_world_path = WORLDS_DIR / f"{test_world_name}.sdf"
+    tree = ET.parse(generated_world_path)
+    root = tree.getroot()
+    world = root.find("world")
+    
+
+    plugins = world.findall(".//plugin")
+    
+    # check that there are exactly 14 <plugin> elements under world
+    assert len(plugins) == 14, f"Expected exactly 14 plugins under world, found {len(plugins)}"
+        
+    # check that exactly one is WindEffects, and its magnitude noise/stddev parses to 0.45
+    wind_effects_plugins = [p for p in plugins if p.get("name") == "gz::sim::systems::WindEffects"]
+    assert len(wind_effects_plugins) == 1, f"Expected exactly 1 WindEffects plugin, found {len(wind_effects_plugins)}"
+    
+    wind_effects = wind_effects_plugins[0]
+    stddev_element = wind_effects.find("./horizontal/magnitude/noise/stddev")
+    assert stddev_element is not None, "Could not find standard deviation tag inside magnitude noise block"
+    
+    assert float(stddev_element.text) == pytest.approx(test_gust_scaled)

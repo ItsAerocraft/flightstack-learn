@@ -4,10 +4,14 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 from sim.sim_launch import wsl_run
+from configs.config_params import GUST_INTENSITY
 
+
+# paths into PX4 files (AI)
 WORLDS_DIR = Path(r"\\wsl.localhost\Ubuntu-24.04\home\itsaerocraft\PX4-Autopilot\Tools\simulation\gz\worlds")
+SERVER_CONFIG = Path(r"\\wsl.localhost\Ubuntu-24.04\home\itsaerocraft\PX4-Autopilot\src\modules\simulation\gz_bridge\server.config")
 
-def write_world(wind_speed, wind_dir, name="flightstack"):
+def write_world(wind_speed, wind_dir, name="flightstack", gust_scaled=0.0, surge_period=8.0, direction_swing_period=6.0):
 
     # retrieve stock sdf file
     stock_world_path = WORLDS_DIR / "default.sdf"
@@ -38,6 +42,59 @@ def write_world(wind_speed, wind_dir, name="flightstack"):
 
     #append the wind element and its subelements to the world file
     world.append(wind_element)
+
+    try:
+        server_tree = ET.parse(SERVER_CONFIG)
+        server_root = server_tree.getroot()
+        
+        for plugin in server_root.findall(".//plugin"):
+            # Skip the plugin whose name is gz::sim::systems::WindEffects, as we are changing them (AI)
+            if plugin.get("name") == "gz::sim::systems::WindEffects":
+                continue
+        
+            # Append the plugin to the world
+            world.append(plugin)
+
+    except (ET.ParseError, FileNotFoundError) as e:
+        print(f"Warning: Could not parse or find server config at {SERVER_CONFIG}: {e}")
+
+    wind_effects = ET.SubElement(world, "plugin", {
+        "filename": "gz-sim-wind-effects-system",
+        "name": "gz::sim::systems::WindEffects"
+    })
+
+    # build the configured WindEffects with their respective subelements 
+    # [AI directed me what to change, I wrote the change code] (AI)
+
+    # force approximation scaling factor (drag k = 1)
+    ET.SubElement(wind_effects, "force_approximation_scaling_factor").text = "1"
+    
+    # horizontal parent block
+    horizontal = ET.SubElement(wind_effects, "horizontal")
+    
+    # magnitude Sub-block (surge tracking every 8 seconds + gust_scaled noise)
+    magnitude = ET.SubElement(horizontal, "magnitude")
+    ET.SubElement(magnitude, "time_for_rise").text = "1"
+    
+    mag_sin = ET.SubElement(magnitude, "sin")
+    ET.SubElement(mag_sin, "amplitude_percent").text = str(GUST_INTENSITY)
+    ET.SubElement(mag_sin, "period").text = str(surge_period)
+    
+    mag_noise = ET.SubElement(magnitude, "noise", {"type": "gaussian"})
+    ET.SubElement(mag_noise, "mean").text = "0"
+    ET.SubElement(mag_noise, "stddev").text = str(gust_scaled)
+    
+    # direction Sub-block
+    direction = ET.SubElement(horizontal, "direction")
+    ET.SubElement(direction, "time_for_rise").text = "1"
+    
+    dir_sin = ET.SubElement(direction, "sin")
+    ET.SubElement(dir_sin, "amplitude").text = "15"
+    ET.SubElement(dir_sin, "period").text = str(direction_swing_period)
+    
+    dir_noise = ET.SubElement(direction, "noise", {"type": "gaussian"})
+    ET.SubElement(dir_noise, "mean").text = "0"
+    ET.SubElement(dir_noise, "stddev").text = "2"
 
 
     tree.write(WORLDS_DIR / f"{name}.sdf") # write a NEW file and not overwrite the default file

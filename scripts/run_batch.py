@@ -6,13 +6,14 @@ import os, csv
 import numpy as np
 import asyncio
 
-SEEDS = [3, 4, 5, 6] # do not use test seeds 1 and 2
+SEEDS = list(range(3, 203)) # do not use test seeds 1 and 2
 
 async def main():
     fieldnames = [
         "seed", 
         "wind_speed", "wind_dir", 
         "mass_factor", "inertia_factor",
+        "surge_period", "direction_swing_period",
         "status", "clean", "runtime", "path",
         "rms_m"
         ]
@@ -22,8 +23,20 @@ async def main():
         with open(SUMMARY_CSV, mode="w", newline="") as f:
             writer = csv.DictWriter(f, fieldnames=fieldnames)
             writer.writeheader()
-        
+
+    finished_seeds = set()
+    if os.path.exists(SUMMARY_CSV):
+        with open(SUMMARY_CSV, mode="r", newline="") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                if row.get("seed"):
+                    finished_seeds.add(int(row["seed"]))
+    
     for seed in SEEDS:
+        if seed in finished_seeds:
+            print(f"Skipping seed {seed}: already exists in summary.csv")
+            continue
+    
         result = await run_trial(seed)
 
         if result["status"] == "ok":

@@ -6,7 +6,7 @@ import pandas as pd
 from configs.config_paths import FIG_DIR, SUMMARY_CSV
 
 
-def main():
+def plot_fig2(report=False):
     if not os.path.exists(SUMMARY_CSV):
         raise FileNotFoundError(
             f"Could not find {SUMMARY_CSV}. Make sure to run your batch simulation script first."
@@ -20,22 +20,26 @@ def main():
     successful_trials = len(df_ok)
     dropped_trials = total_trials - successful_trials
 
-    print(f"=== Filtering Simulation Results ===")
-    print(f"Total trials found:         {total_trials}")
-    print(f"Successful trials retained: {successful_trials}")
-    print(f"Dropped trials:             {dropped_trials}\n")
+    if not report:
+        print(f"=== Filtering Simulation Results ===")
+        print(f"Total trials found:         {total_trials}")
+        print(f"Successful trials retained: {successful_trials}")
+        print(f"Dropped trials:             {dropped_trials}\n")
 
     plt.figure(figsize=(7, 5))
 
     x = df_ok["wind_speed"]
     y = df_ok["rms_m"]
 
-    plt.scatter(x, y, color="blue", alpha=0.7, edgecolors="none", label="Trials")
+    sc = plt.scatter(x, y, c=df_ok["direction_swing_period"], cmap="viridis", s=15, alpha=0.8, edgecolors="none")
 
-    plt.xlabel("Wind speed / m s^-1")
+    cbar = plt.colorbar(sc)
+    cbar.set_label("Direction Swing Period / s")
+
+    plt.xlabel("Wind speed / m s$^{-1}$")
     plt.ylabel("Horizontal RMS error / m")
 
-    plt.ylim(bottom=0)
+    plt.ylim(0, 1.1 * y.max())
 
     plt.title(
         f"Horizontal RMS Error vs. Wind Speed\n(n = {successful_trials} successful trials)"
@@ -47,14 +51,18 @@ def main():
     png_output_path = Path(FIG_DIR) / "fig2_rms_vs_wind.png"
     pdf_output_path = Path(FIG_DIR) / "fig2_rms_vs_wind.pdf"
 
-    plt.savefig(png_output_path, dpi=200, bbox_inches="tight")
+    if not report:
+        plt.savefig(png_output_path, dpi=200, bbox_inches="tight")
+
     plt.savefig(pdf_output_path, bbox_inches="tight")
     plt.close()
 
-    print(f"[V] Plot successfully saved to:")
-    print(f"  - {png_output_path}")
-    print(f"  - {pdf_output_path}")
+    if not report:
+        print(f"[V] Plot(s) successfully saved to:")
+        print(f"  - {png_output_path}")
+        print(f"  - {pdf_output_path}")
 
+    return pdf_output_path
 
 if __name__ == "__main__":
-    main()
+    plot_fig2()

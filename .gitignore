@@ -4,6 +4,5 @@ __pycache__/
 *.npz
 *.csv
 data/
-z_results/
-figures/
+logs/
 *.egg-info/

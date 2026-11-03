@@ -7,6 +7,7 @@ from sim.sim_launch import start_sim, stop_sim
 from flight.flight_figure8 import fly_figure8
 
 from configs.config_paths import TRAJ_DIR
+from configs.config_params import GUST_INTENSITY
 
 import subprocess
 import asyncio
@@ -16,21 +17,31 @@ from dataclasses import asdict
 
 RUN_TIMEOUT = 180
 
-async def run_trial(seed, timeout = RUN_TIMEOUT):
+async def run_trial(seed, timeout=RUN_TIMEOUT, run_name=None, gz_seed=None):
+    if run_name is None:
+        run_name = f"seed_{seed:03d}"
+
+    if gz_seed is None:
+        gz_seed = seed
 
     start_time = time.monotonic()
 
     params = draw_params(seed)
     write_model(params.mass_factor, params.inertia_factor)
-    write_world(0.0, 0.0) # no wind on startup
+    write_world(
+        0.0, 0.0, 
+        gust_scaled=(GUST_INTENSITY * params.wind_speed),
+        surge_period=params.surge_period,
+        direction_swing_period=params.direction_swing_period
+    ) # no wind on startup except for gusting
 
     # kill stale running tasks to stop hang and interrupting overnight/afk runs (AI)
     subprocess.run(["taskkill", "/F", "/IM", "mavsdk_server.exe"], capture_output=True) 
 
-    proc = start_sim(log_name=f"seed_{seed:03d}")
+    proc = start_sim(log_name=run_name, gz_seed=gz_seed)
 
     try:
-        save_path = TRAJ_DIR / f"seed_{seed:03d}.npz"
+        save_path = TRAJ_DIR / f"{run_name}.npz"
 
         wind_on = lambda: set_wind(params.wind_speed, params.wind_dir)
         await asyncio.wait_for(fly_figure8(save_path=save_path, on_airborne=wind_on), timeout=timeout)
