@@ -2,7 +2,6 @@
 __pycache__/
 *.pyc
 *.npz
-*.csv
 data/
 logs/
 *.egg-info/
