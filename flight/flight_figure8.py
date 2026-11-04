@@ -25,6 +25,24 @@ DURATION = (LOOP_NUMBER * 2 * np.pi) / TRAJ.omega + (RAMP_DURATION / 2) # (s) [f
 SETTLE_TIME = 20 # (s) [time for drone to settle until wind is turned on in gazebo]
 
 async def fly_figure8(save_path=TRAJ_LOG, on_airborne=None):
+    '''
+    Connects to PX4, arms, climbs to altitude, flies the ramped figure-8
+    trajectory in offboard mode, then lands and saves the logged flight data.
+
+    Args:
+        [save_path]: filesystem path to write the trajectory log (.npz) to.
+        [on_airborne]: optional zero-argument callback invoked once the drone
+            reaches cruising altitude (e.g. to turn on wind).
+
+    Returns:
+        None. Logs desired/actual position, velocity, acceleration, and loop
+        timing arrays to save_path, and lands the drone even if the loop is
+        interrupted or raises.
+
+    Loop rate is held at LOOP_RATE_HZ by sleeping out the remaining tick
+    period each iteration; a missed deadline is counted and the schedule is
+    reset instead of allowed to accumulate drift.
+    '''
     state = State()
     
     t_log = []

@@ -12,6 +12,29 @@ WORLDS_DIR = Path(r"\\wsl.localhost\Ubuntu-24.04\home\itsaerocraft\PX4-Autopilot
 SERVER_CONFIG = Path(r"\\wsl.localhost\Ubuntu-24.04\home\itsaerocraft\PX4-Autopilot\src\modules\simulation\gz_bridge\server.config")
 
 def write_world(wind_speed, wind_dir, name="flightstack", gust_scaled=0.0, surge_period=8.0, direction_swing_period=6.0):
+    '''
+    Writes a new Gazebo world file with a steady background wind and a
+    gusting WindEffects plugin configured on top of it.
+
+    Args:
+        [wind_speed]: steady background wind magnitude (m s^-1).
+        [wind_dir]: wind direction, ENU convention, 0 deg = toward east, 90 deg
+            = toward north (deg).
+        [name]: world name to write; output file is <name>.sdf.
+        [gust_scaled]: standard deviation of the gust magnitude noise, as a
+            fraction of wind_speed (unitless).
+        [surge_period]: period of the sinusoidal gust magnitude surge (s).
+        [direction_swing_period]: period of the sinusoidal gust direction
+            swing (s).
+
+    Returns:
+        [name] of the world written, for use as the world argument to start_sim.
+
+    Starts from the stock default.sdf (never modified), copies over any
+    plugins from PX4's server.config other than WindEffects, then appends a
+    freshly configured WindEffects plugin so gusting is reproducible from
+    gz_seed.
+    '''
 
     # retrieve stock sdf file
     stock_world_path = WORLDS_DIR / "default.sdf"
@@ -104,12 +127,22 @@ def write_world(wind_speed, wind_dir, name="flightstack", gust_scaled=0.0, surge
 
 # set_wind() written with AI assistance (Claude, Anthropic), Oct 2026.
 def set_wind(wind_speed, wind_dir, world="flightstack"):
-    """Change the wind in the running Gazebo world (used after takeoff).
+    '''
+    Changes the steady wind in an already-running Gazebo world, for use after
+    takeoff (e.g. from an on_airborne callback).
 
-    Same ENU convention as write_world: wind_dir in deg, 0 = toward east, 90 = toward north.
-    Gazebo's WindEffects plugin listens on /world/<world>/wind and applies the new
-    wind straight away; raises if gz rejects the message.
-    """
+    Args:
+        [wind_speed]: steady background wind magnitude (m s^-1).
+        [wind_dir]: wind direction, same ENU convention as write_world, 0 deg
+            = toward east, 90 deg = toward north (deg).
+        [world]: name of the running world to target.
+
+    Returns:
+        None. Raises RuntimeError if the gz topic command is rejected.
+
+    Publishes directly to the WindEffects plugin's /world/<world>/wind topic,
+    which applies the new wind immediately rather than ramping it.
+    '''
     wind_dir_rad = np.radians(wind_dir)
     wind_x = wind_speed * np.cos(wind_dir_rad)
     wind_y = wind_speed * np.sin(wind_dir_rad)

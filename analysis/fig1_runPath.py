@@ -9,6 +9,20 @@ from analysis.analysis_metrics import compute_metrics
 
 
 def plot_fig1(report=False):
+    '''
+    Plots the desired vs. actual top-down flight path for the fixed seed-4
+    run, annotated with its wind speed, mass factor, and horizontal RMS.
+
+    Args:
+        [report]: if True, suppresses console printing and skips the PNG
+            copy, producing only the PDF (for batch figure generation).
+
+    Returns:
+        Path to the saved PDF figure.
+
+    Reads seed 4's row from summary.csv to find its trajectory .npz and
+    recomputes its metrics via compute_metrics before plotting.
+    '''
     if not os.path.exists(SUMMARY_CSV):
             raise FileNotFoundError(
                 f"Could not find {SUMMARY_CSV}. Make sure to run your batch simulation script first."

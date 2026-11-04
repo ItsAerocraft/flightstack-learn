@@ -17,22 +17,48 @@ GZ_PATTERN = "'[g]z sim'"
 
 
 def wsl_run(cmd, timeout=15):
-    """Run one short command inside WSL and wait for it to finish."""
+    '''
+    Runs one short command inside the WSL Ubuntu instance and waits for it to finish.
+
+    Args:
+        [cmd]: shell command string to run inside WSL via `bash -c`.
+        [timeout]: maximum time to wait for the command to complete (s).
+
+    Returns:
+        subprocess.CompletedProcess with captured stdout/stderr and returncode.
+    '''
     return subprocess.run(WSL + [cmd], capture_output=True, text=True, timeout=timeout)
 
 
 def sim_is_running():
-    """True if any px4 or Gazebo process is still alive in WSL."""
+    '''
+    Checks whether PX4 or Gazebo is still running inside WSL.
+
+    Returns:
+        True if any px4 or `gz sim` process is still alive, False otherwise.
+    '''
     result = wsl_run(f"pgrep -x px4; pgrep -f {GZ_PATTERN}")
     return result.stdout.strip() != ""
 
 
 def start_sim(model="x500_mc", world="flightstack", headless=True, log_name="px4", gz_seed=None):
-    """Start PX4 + Gazebo in WSL in the background and return the Popen handle.
+    '''
+    Starts PX4 and Gazebo inside WSL in the background and returns immediately.
 
-    Returns as soon as the process starts; connect() is what waits until the
-    drone is ready to fly.
-    """
+    Args:
+        [model]: Gazebo model name to spawn (matches the name written by write_model).
+        [world]: Gazebo world name to load (matches the name written by write_world).
+        [headless]: if True, runs Gazebo without a GUI.
+        [log_name]: filename (without extension) to write PX4's console output to.
+        [gz_seed]: optional seed for Gazebo's render engine, for reproducible gusts.
+
+    Returns:
+        subprocess.Popen handle for the WSL wrapper process, with a .log_file
+        attribute for the open PX4 log file.
+
+    Clears any leftover px4/Gazebo processes from a crashed prior run before
+    launching; does not wait for PX4 to be flight-ready, connect() does that.
+    '''
     if sim_is_running():
         stop_sim(None)  # leftovers from a crashed run would clash with this one
 
@@ -55,10 +81,21 @@ def start_sim(model="x500_mc", world="flightstack", headless=True, log_name="px4
 
 
 def stop_sim(proc, wait_s=10):
-    """Stop PX4 + Gazebo: ask nicely, wait, force it, then check nothing is left.
+    '''
+    Stops PX4 and Gazebo inside WSL, escalating from a clean shutdown to a forced kill.
 
-    Returns True if no px4 or Gazebo processes remain.
-    """
+    Args:
+        [proc]: Popen handle returned by start_sim, or None to skip the
+            Windows-side wait/kill.
+        [wait_s]: time to wait for proc to exit after SIGTERM before killing it (s).
+
+    Returns:
+        True if no px4 or Gazebo processes remain afterward, False otherwise.
+
+    Sends SIGTERM first so PX4 can shut down cleanly, waits for the wsl.exe
+    wrapper to exit (killing it if it doesn't), then SIGKILLs anything still
+    alive in Linux as a backstop.
+    '''
     # 1. terminate: SIGTERM inside Linux, so PX4 gets to shut down cleanly
     wsl_run(f"pkill -TERM -x px4; pkill -TERM -f {GZ_PATTERN}")
 

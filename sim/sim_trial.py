@@ -18,6 +18,29 @@ from dataclasses import asdict
 RUN_TIMEOUT = 180
 
 async def run_trial(seed, timeout=RUN_TIMEOUT, run_name=None, gz_seed=None):
+    '''
+    Runs one complete simulated flight trial: draws randomized parameters,
+    writes the scaled model and gusting world, launches the sim, flies the
+    figure-8, and tears everything down.
+
+    Args:
+        [seed]: seed used to draw RunParams (mass, inertia, wind, gust timing).
+        [timeout]: maximum time to allow the flight loop to run before it is
+            treated as timed out (s).
+        [run_name]: name used for the PX4 log and trajectory .npz file;
+            defaults to "seed_<seed>".
+        [gz_seed]: seed for Gazebo's render engine; defaults to seed.
+
+    Returns:
+        Dict of the drawn RunParams fields plus status ("ok" / "timeout" /
+        "error: ..."), clean (bool, whether teardown left no processes
+        running), runtime (s), and path to the saved trajectory .npz.
+
+    Wind is held at zero until on_airborne fires (the drone climbs through
+    still air), after which the drawn wind_speed/wind_dir is applied; the
+    simulation is always torn down in a finally block even if the flight
+    loop raises or times out.
+    '''
     if run_name is None:
         run_name = f"seed_{seed:03d}"
 

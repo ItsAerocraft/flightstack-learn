@@ -12,6 +12,14 @@ WIND_SPEED = 3.0
 WIND_DIRECTION = 90.0
 
 async def main():
+    '''
+    Runs one manually-parameterized flight with a visible Gazebo window, for
+    interactively checking that the simulation and flight loop behave as expected.
+
+    Writes the model and world files for the fixed MASS_FACTOR/INERTIA_FACTOR/
+    WIND_SPEED/WIND_DIRECTION constants, starts the sim non-headless, flies
+    the figure-8 once, then shuts the simulation down.
+    '''
     model = write_model(MASS_FACTOR, INERTIA_FACTOR)
     world = write_world(WIND_SPEED, WIND_DIRECTION)
 

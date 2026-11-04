@@ -33,6 +33,21 @@ class RunParams:
     direction_swing_period: float
 
 def draw_params(seed: int) -> RunParams:
+    '''
+    Draws one set of randomized trial parameters from the configured ranges,
+    reproducibly from seed.
+
+    Args:
+        [seed]: integer seed for the random number generator.
+
+    Returns:
+        RunParams with wind_speed, wind_dir, mass_factor, inertia_factor,
+        surge_period, and direction_swing_period drawn uniformly from their
+        respective MIN/MAX module constants.
+
+    Using a fresh np.random.default_rng(seed) per call means the same seed
+    always reproduces the same drawn parameters.
+    '''
     rng = np.random.default_rng(seed)
     
     wind_speed = float(rng.uniform(WIND_SPEED_MIN, WIND_SPEED_MAX))

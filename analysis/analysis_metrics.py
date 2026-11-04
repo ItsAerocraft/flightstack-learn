@@ -3,6 +3,23 @@ import numpy as np
 
 
 def compute_metrics(npz_path):
+    '''
+    Loads a saved trajectory log and computes tracking-error metrics,
+    excluding the initial ramp-up period.
+
+    Args:
+        [npz_path]: path to a trajectory .npz file written by fly_figure8.
+
+    Returns:
+        Dict with horizontal_rms and vertical_rms (m, RMS of
+        desired-minus-actual NED position error after the ramp),
+        max_horizontal_error (m), nan_rows (count of actual-position rows
+        containing NaN), plus the raw lateness, pos_des, and pos_act arrays.
+
+    Error is masked to t > ramp_duration so the smoothstep spin-up transient
+    does not inflate the RMS; horizontal error is the norm of the north/east
+    components, vertical error is the down component alone.
+    '''
     if not os.path.exists(npz_path):
         raise FileNotFoundError(f"Could not find {npz_path}. Ensure your flight controller loop ran successfully.")
 

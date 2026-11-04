@@ -9,6 +9,15 @@ import asyncio
 SEEDS = list(range(3, 203)) # do not use test seeds 1 and 2
 
 async def main():
+    '''
+    Runs every seed in SEEDS that is not already present in summary.csv,
+    logging each trial's parameters, outcome, and horizontal RMS to that CSV
+    as it finishes.
+
+    Writes summary.csv's header if the file does not yet exist, then runs
+    trials sequentially so interrupting the script and rerunning it resumes
+    from the next unfinished seed rather than redoing completed ones.
+    '''
     fieldnames = [
         "seed", 
         "wind_speed", "wind_dir", 

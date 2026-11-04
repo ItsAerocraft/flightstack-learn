@@ -1,6 +1,16 @@
 from mavsdk import System
 
 async def connect():
+    '''
+    Connects to a running PX4 instance over MAVSDK and waits until it reports a
+    healthy position estimate and is ready to arm.
+
+    Returns:
+        Connected mavsdk.System instance, ready for arming and offboard control.
+
+    Blocks on two async health streams in sequence: first for the MAVSDK
+    connection itself, then for EKF/GPS/barometer/power checks to clear.
+    '''
     drone = System()
     print("Connecting...")
     await drone.connect(system_address="udpin://0.0.0.0:14540")

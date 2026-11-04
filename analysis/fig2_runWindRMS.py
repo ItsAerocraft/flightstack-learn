@@ -7,6 +7,20 @@ from configs.config_paths import FIG_DIR, SUMMARY_CSV
 
 
 def plot_fig2(report=False):
+    '''
+    Plots horizontal RMS error against wind speed for every successful trial
+    in summary.csv, colored by gust direction-swing period.
+
+    Args:
+        [report]: if True, suppresses console printing and skips the PNG
+            copy, producing only the PDF (for batch figure generation).
+
+    Returns:
+        Path to the saved PDF figure.
+
+    Trials whose status is not "ok" are dropped before plotting; the dropped
+    count is reported when report is False.
+    '''
     if not os.path.exists(SUMMARY_CSV):
         raise FileNotFoundError(
             f"Could not find {SUMMARY_CSV}. Make sure to run your batch simulation script first."

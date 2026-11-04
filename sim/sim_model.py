@@ -11,12 +11,25 @@ MODELS_DIR = Path(r"\\wsl.localhost\Ubuntu-24.04\home\itsaerocraft\PX4-Autopilot
 
 
 def write_model(mass_factor, inertia_factor, name="x500_mc"):
-    """Write a copy of the x500 with the body's mass and inertia scaled.
+    '''
+    Writes a scaled copy of the PX4 x500 Gazebo model, with the base_link
+    body's mass and inertia multiplied by the given factors and wind forces
+    enabled.
 
-    Reads the stock x500 / x500_base files (never modified) and writes
-    <name>_base (scaled body) and <name> (motors pointed at that body).
-    PX4 still flies it with stock x500 tuning, which creates the model mismatch.
-    """
+    Args:
+        [mass_factor]: multiplier applied to the stock base_link mass (unitless).
+        [inertia_factor]: multiplier applied to the stock ixx/iyy/izz inertia
+            tensor diagonal (unitless).
+        [name]: model name to write; files are written to <name>_base (body)
+            and <name> (motor assembly pointed at that body).
+
+    Returns:
+        [name] of the model written, for use as the model argument to start_sim.
+
+    Reads the stock x500 / x500_base files (never modified) and writes new
+    copies; PX4 still flies the result with stock x500 tuning, which creates
+    the model mismatch used to test parameter sensitivity.
+    '''
     stock_base = MODELS_DIR / "x500_base"
     stock_top = MODELS_DIR / "x500"
     new_base = MODELS_DIR / f"{name}_base"

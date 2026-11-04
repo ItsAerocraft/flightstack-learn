@@ -8,6 +8,23 @@ from configs.config_paths import SUMMARY_CSV, BOOTSTRAP_CSV
 OUTPUT_CSV = BOOTSTRAP_CSV
 
 def run_bootstrapping(n_iterations=10000, seed=62):
+    '''
+    Bootstraps confidence intervals for the wind/mass/swing-period effects on
+    horizontal RMS error and for mean RMS within each wind-speed bin, from the
+    successful trials in summary.csv.
+
+    Args:
+        [n_iterations]: number of bootstrap resamples to draw (~).
+        [seed]: seed for the random number generator, for reproducible resampling.
+
+    Writes a summary table (point estimate plus 95% CI per statistic) to
+    BOOTSTRAP_CSV and prints it.
+
+    Each resample refits RMS vs. wind speed by linear regression, removes
+    that wind trend from the residuals, then fits mass factor and
+    direction-swing period against the residuals, so each reported effect is
+    estimated after controlling for wind speed.
+    '''
     if not os.path.exists(SUMMARY_CSV):
         raise FileNotFoundError(
             f"Could not find {SUMMARY_CSV}. Run the batch script first."

@@ -3,6 +3,10 @@ from analysis.fig2_runWindRMS import plot_fig2
 from analysis.fig3_runMassRMS import plot_fig3
 
 def main():
+    '''
+    Regenerates all three report figures (path profile, RMS vs wind, RMS vs
+    mass) as PDFs and prints where each was saved.
+    '''
     pdf_path_1 = plot_fig1(report=True)
     pdf_path_2 = plot_fig2(report=True)
     pdf_path_3 = plot_fig3(report=True)

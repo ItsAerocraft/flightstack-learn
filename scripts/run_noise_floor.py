@@ -9,6 +9,14 @@ TEST_SEED = 4
 #  58.6 ± 0.729 cm
 
 async def main():
+    '''
+    Repeats a single fixed seed several times to measure how much run-to-run
+    RMS varies purely from simulation noise (the "noise floor"), holding all
+    drawn parameters fixed and varying only the Gazebo render seed.
+
+    Prints the mean and standard deviation of horizontal RMS (cm) across the
+    successful runs, and how many runs were dropped due to failure.
+    '''
     rms_array = []
     dropped = 0
 
